@@ -1,0 +1,15 @@
+artifact_uri: file:///home/vishalr/Customer_satisfaction/mlruns/376370536525509685/b4dd63475aed4c0180143203764f0e97/artifacts
+end_time: 1749232246770
+entry_point_name: ''
+experiment_id: '376370536525509685'
+lifecycle_stage: active
+run_id: b4dd63475aed4c0180143203764f0e97
+run_name: inference_run
+run_uuid: b4dd63475aed4c0180143203764f0e97
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1749232246745
+status: 4
+tags: []
+user_id: vishalr

@@ -1,27 +1,49 @@
-import logging 
+import logging
+
 import pandas as pd
 from zenml import step
 
-# Configure logger
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 class IngestData:
-    """Ingest data from a CSV file."""
-    def __init__(self)->None:
-        pass
+    """
+    Data ingestion class which ingests data from the source and returns a DataFrame.
+    """
 
-    def get_data(self)->pd.DataFrame:
-        """Ingest data from a CSV file."""
-        
-        return pd.read_csv("/home/vishalr/Desktop/Mlops project/Data/olist_customers_dataset.csv")
+    def __init__(self, data_path: str) -> None:
+        """Initialize the data ingestion class."""
+        self.data_path = data_path
+
+    def get_data(self) -> pd.DataFrame:
+        df = pd.read_csv(self.data_path)
+        return df
+
+
+def load_data(data_path: str) -> pd.DataFrame:
+    """Load data from a file path.
     
-@step
-def ingest_df() -> pd.DataFrame:
-    """Ingest data from a CSV file."""
+    Args:
+        data_path: Path to the input data file
+        
+    Returns:
+        pd.DataFrame: Loaded DataFrame
+    """
     try:
-        ingest_data = IngestData()
-        return ingest_data.get_data()
+        return pd.read_csv(data_path)
     except Exception as e:
-        logger.error(f"Error ingesting data: {e}")
+        logging.error(f"Error loading data from {data_path}: {e}")
+        raise
+
+@step
+def ingest_df(data_path: str) -> pd.DataFrame:
+    """
+    Args:
+        data_path: Path to the input data file
+    Returns:
+        df: pd.DataFrame
+    """
+    try:
+        df = load_data(data_path)
+        return df
+    except Exception as e:
+        logging.error(e)
         raise e

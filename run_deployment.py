@@ -1,8 +1,7 @@
 from typing import cast
 
 import click
-from pipelines.deployment_pipeline import continuous_deployment_pipeline
-from rich import print
+from pipelines.deployment_pipeline import continuous_deployment_pipeline, inference_pipeline
 from zenml.integrations.mlflow.mlflow_utils import get_tracking_uri
 from zenml.integrations.mlflow.model_deployers.mlflow_model_deployer import (
     MLFlowModelDeployer,
@@ -20,29 +19,36 @@ DEPLOY_AND_PREDICT = "deploy_and_predict"
     "-c",
     type=click.Choice([DEPLOY,PREDICT,DEPLOY_AND_PREDICT]),
     default=DEPLOY_AND_PREDICT,
-    help="Optionally you can choose to only run the deployment"
-    "pipeline to train and deploy a model ('deploy') or to"
-    "only run a prediction against the deployed model"
-    "('predict'). By default both will be run"
+    help="Optionally you can choose to only run the deployment "
+    "pipeline to train and deploy a model ('deploy') or to "
+    "only run a prediction against the deployed model "
+    "('predict'). By default both will be run "
     "('deploy_and_predict')."
 )
-
 @click.option(
     "--min-accuracy",
     default=0.92,
     help="Minimum accuracy to deploy the model"
 )
-
-def run_deployment(config:str,min_accuracy:float):
+def run_deployment(config: str, min_accuracy: float):
+   # Define the path to the data file
+   data_path = "Data/olist_customers_dataset.csv"
+   
    mlflow_model_deployer_component = MLFlowModelDeployer.get_active_model_deployer()
    deploy = config == DEPLOY or config == DEPLOY_AND_PREDICT
    predict = config == PREDICT or config == DEPLOY_AND_PREDICT
    if deploy:
-    continuous_deployment_pipeline(min_accuracy=min_accuracy,
-                                   workers=3,
-                                   timeout=60)
+    continuous_deployment_pipeline(
+        data_path=data_path,  
+        min_accuracy=min_accuracy,
+        workers=3,
+        timeout=60
+    )
    if predict:
-    inference_pipeline()
+    inference_pipeline(
+        pipeline_name="continuous_deployment_pipeline",
+        pipeline_step_name="mlflow_model_deployer_step",
+        )
    
    print(
      "You can run:\n "

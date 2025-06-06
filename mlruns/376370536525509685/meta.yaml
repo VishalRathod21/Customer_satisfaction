@@ -1,0 +1,6 @@
+artifact_location: file:///home/vishalr/Customer_satisfaction/mlruns/376370536525509685
+creation_time: 1749231945987
+experiment_id: '376370536525509685'
+last_update_time: 1749231945987
+lifecycle_stage: active
+name: inference_pipeline
