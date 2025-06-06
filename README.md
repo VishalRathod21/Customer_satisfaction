@@ -226,50 +226,6 @@ EXPOSE 8501
 CMD ["streamlit", "run", "streamlit_app.py", "--server.port=8501", "--server.address=0.0.0.0"]
 ```
 
-### Kubernetes Deployment (Optional)
-
-For production deployment on Kubernetes, you can use the following sample deployment configuration:
-
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: customer-satisfaction
-  labels:
-    app: customer-satisfaction
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: customer-satisfaction
-  template:
-    metadata:
-      labels:
-        app: customer-satisfaction
-    spec:
-      containers:
-      - name: customer-satisfaction
-        image: your-registry/customer-satisfaction:latest
-        ports:
-        - containerPort: 8501
-        env:
-        - name: PORT
-          value: "8501"
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: customer-satisfaction
-spec:
-  selector:
-    app: customer-satisfaction
-  ports:
-  - protocol: TCP
-    port: 80
-    targetPort: 8501
-  type: LoadBalancer
-```
-
 ### Monitoring and Logging
 
 For production deployments, consider adding:
