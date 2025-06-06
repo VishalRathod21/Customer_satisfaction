@@ -1,0 +1,20 @@
+[server]
+port = 8501
+enableCORS = false
+enableXsrfProtection = false
+
+[runner]
+# Disable the file watcher to prevent issues with Streamlit Cloud
+fileWatcherType = "none"
+
+[client]
+# Disable telemetry
+dataFrameSerialization = "legacy"
+
+[theme]
+base="light"
+primaryColor="#FF4B4B"
+backgroundColor="#FFFFFF"
+secondaryBackgroundColor="#F0F2F6"
+textColor="#31333F"
+font="sans serif"

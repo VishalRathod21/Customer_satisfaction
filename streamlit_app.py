@@ -1,8 +1,26 @@
 import json
 import logging
+import os
+import sys
+from pathlib import Path
 from typing import Dict, Any, Optional
 
 import numpy as np
+
+# Add the project root to the path
+sys.path.append(str(Path(__file__).parent.absolute()))
+
+# Initialize logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Try to initialize ZenML if not already done
+if not (Path(".zen") / "config.yaml").exists():
+    try:
+        from init_zenml import setup_environment
+        setup_environment()
+    except Exception as e:
+        logger.warning(f"Failed to initialize ZenML: {e}")
 import pandas as pd
 import streamlit as st
 from PIL import Image, UnidentifiedImageError
@@ -320,15 +338,34 @@ def main() -> None:
     inputs = get_user_input()
     
     # Prediction section
-    st.header("🎯 Make a Prediction")
-    
+    # Check if dependencies are available
     try:
+        # Initialize ZenML client
+        from zenml.client import Client
+        from zenml.enums import StoreType
+        
+        # Ensure local store is used
+        if not (Path(".zen") / "config.yaml").exists():
+            st.warning("ZenML not initialized. Setting up local store...")
+            from init_zenml import setup_environment
+            setup_environment()
+        
+        # Import pipeline components
         from pipelines.deployment_pipeline import prediction_service_loader
         from run_deployment import run_deployment
+        
+        # Verify ZenML is properly initialized
+        client = Client()
+        if client.zen_store.type == StoreType.REST:
+            st.warning("Using REST store. Switching to local store...")
+            from init_zenml import setup_environment
+            setup_environment()
+            client = Client()
+            
         DEPENDENCIES_AVAILABLE = True
-    except ImportError as e:
-        logger.warning(f"Failed to import dependencies: {e}")
-        st.error("Failed to load required dependencies. Please ensure all packages are installed.")
+    except Exception as e:
+        logger.exception("Failed to initialize dependencies:")
+        st.error(f"Failed to initialize application: {str(e)}. Please check the logs for more details.")
         return
     
     col1, col2 = st.columns([1, 1])
