@@ -100,6 +100,189 @@ python run_pipeline.py
 
 ### Deployment Pipeline
 
+## 🐳 Docker Deployment
+
+You can easily deploy this application using Docker. Here's how:
+
+### Prerequisites
+- [Docker](https://docs.docker.com/get-docker/) installed on your system
+
+### Building the Docker Image
+
+1. Clone the repository (if you haven't already):
+   ```bash
+   git clone https://github.com/VishalRathod21/Customer_satisfaction.git
+   cd Customer_satisfaction
+   ```
+
+2. Build the Docker image:
+   ```bash
+   docker build -t customer-satisfaction .
+   ```
+
+### Running the Container
+
+1. Run the container with port mapping (maps container port 8501 to host port 8501):
+   ```bash
+   docker run -p 8501:8501 customer-satisfaction
+   ```
+
+2. Access the application in your browser at:
+   ```
+   http://localhost:8501
+   ```
+
+### Environment Variables
+
+You can configure the application using the following environment variables:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `PORT` | Port to run the Streamlit app | `8501` |
+| `ZENML_MLFLOW_TRACKING_URI` | MLflow tracking server URI | `http://localhost:5000` |
+
+Example with environment variables:
+```bash
+docker run -p 8501:8501 \
+  -e PORT=8501 \
+  -e ZENML_MLFLOW_TRACKING_URI=http://your-mlflow-server:5000 \
+  customer-satisfaction
+```
+
+### Docker Compose
+
+For a more complex setup with MLflow tracking, you can use `docker-compose.yml`:
+
+```yaml
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "8501:8501"
+    environment:
+      - PORT=8501
+      - ZENML_MLFLOW_TRACKING_URI=http://mlflow:5000
+    depends_on:
+      - mlflow
+    volumes:
+      - ./_assets:/app/_assets
+
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:latest
+    ports:
+      - "5000:5000"
+    command: mlflow server --host 0.0.0.0 --backend-store-uri sqlite:///mlflow.db --default-artifact-root /mlruns
+    volumes:
+      - mlflow_data:/mlruns
+
+volumes:
+  mlflow_data:
+```
+
+To start with Docker Compose:
+```bash
+docker-compose up -d
+```
+
+### Building for Production
+
+For production deployment, you might want to use a multi-stage build. Here's an enhanced `Dockerfile`:
+
+```dockerfile
+# Build stage
+FROM python:3.10.13-slim as builder
+
+WORKDIR /app
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --user -r requirements.txt
+
+# Runtime stage
+FROM python:3.10.13-slim
+
+WORKDIR /app
+
+# Copy Python dependencies from builder
+COPY --from=builder /root/.local /root/.local
+
+# Copy application code
+COPY . .
+
+# Ensure scripts in .local are usable
+ENV PATH=/root/.local/bin:$PATH
+
+# Expose the port the app runs on
+EXPOSE 8501
+
+# Command to run the application
+CMD ["streamlit", "run", "streamlit_app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+```
+
+### Kubernetes Deployment (Optional)
+
+For production deployment on Kubernetes, you can use the following sample deployment configuration:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: customer-satisfaction
+  labels:
+    app: customer-satisfaction
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: customer-satisfaction
+  template:
+    metadata:
+      labels:
+        app: customer-satisfaction
+    spec:
+      containers:
+      - name: customer-satisfaction
+        image: your-registry/customer-satisfaction:latest
+        ports:
+        - containerPort: 8501
+        env:
+        - name: PORT
+          value: "8501"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: customer-satisfaction
+spec:
+  selector:
+    app: customer-satisfaction
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8501
+  type: LoadBalancer
+```
+
+### Monitoring and Logging
+
+For production deployments, consider adding:
+
+1. **Logging**: Configure proper logging to STDOUT/STDERR
+2. **Health Checks**: Add a health check endpoint
+3. **Metrics**: Expose Prometheus metrics for monitoring
+4. **Tracing**: Add distributed tracing for better observability
+
+### CI/CD Integration
+
+You can integrate this with your CI/CD pipeline to automatically build and deploy new versions of your application.
+
 To run the continuous deployment pipeline:
 
 ```bash
