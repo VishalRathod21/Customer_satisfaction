@@ -15,12 +15,17 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Try to initialize ZenML if not already done
-if not (Path(".zen") / "config.yaml").exists():
-    try:
-        from init_zenml import setup_environment
-        setup_environment()
-    except Exception as e:
-        logger.warning(f"Failed to initialize ZenML: {e}")
+try:
+    from init_zenml import initialize_zenml
+    if not (Path(".zen") / "config.yaml").exists():
+        logger.info("ZenML not initialized. Running initialization...")
+        if not initialize_zenml():
+            logger.error("Failed to initialize ZenML. Some features may not work correctly.")
+    else:
+        logger.info("ZenML is already initialized.")
+except Exception as e:
+    logger.error(f"Error during ZenML initialization: {str(e)}")
+    st.warning("Warning: ZenML initialization encountered an error. Some features may be limited.")
 import pandas as pd
 import streamlit as st
 from PIL import Image, UnidentifiedImageError
@@ -340,29 +345,26 @@ def main() -> None:
     # Prediction section
     # Check if dependencies are available
     try:
-        # Initialize ZenML client
-        from zenml.client import Client
-        from zenml.enums import StoreType
-        
-        # Ensure local store is used
-        if not (Path(".zen") / "config.yaml").exists():
-            st.warning("ZenML not initialized. Setting up local store...")
-            from init_zenml import setup_environment
-            setup_environment()
-        
         # Import pipeline components
         from pipelines.deployment_pipeline import prediction_service_loader
         from run_deployment import run_deployment
         
-        # Verify ZenML is properly initialized
-        client = Client()
-        if client.zen_store.type == StoreType.REST:
-            st.warning("Using REST store. Switching to local store...")
-            from init_zenml import setup_environment
-            setup_environment()
+        # Initialize ZenML client with error handling
+        try:
+            from zenml.client import Client
             client = Client()
             
-        DEPENDENCIES_AVAILABLE = True
+            # Verify we can access the store
+            _ = client.zen_store.list_projects()
+            
+            DEPENDENCIES_AVAILABLE = True
+            
+        except Exception as e:
+            logger.error(f"Error initializing ZenML client: {str(e)}")
+            st.warning("Warning: Could not initialize ZenML client. Some features may be limited.")
+            # Try to continue with limited functionality
+            DEPENDENCIES_AVAILABLE = True  # Still set to True to allow basic functionality
+            
     except Exception as e:
         logger.exception("Failed to initialize dependencies:")
         st.error(f"Failed to initialize application: {str(e)}. Please check the logs for more details.")
